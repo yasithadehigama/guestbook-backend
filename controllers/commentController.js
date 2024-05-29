@@ -1,6 +1,7 @@
 import { createSuccess } from "../helpers/success.js";
 import { createError } from "../helpers/error.js";
 import Comment from "../models/Comment.js";
+import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 
 export const getAllComments = async (req, res, next) => {
@@ -17,20 +18,24 @@ export const addComment = async (req, res, next) => {
   let userType;
   let userName;
   const token = req.headers["authorization"]?.split(" ")[1];
-  await jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decodedToken) => {
-    console.log(decodedToken);
-    if (decodedToken?.userType == "ADMIN") {
-      userType = "ADMIN";
-      userName = decodedToken.userName;
-    } else if (decodedToken?.userType == "USER") {
-      userType = "USER";
-      userName = decodedToken.userName;
-    } else {
-      console.log("2");
-      userType = "GUEST";
-      userName = "Guest User";
+  await jwt.verify(
+    token,
+    process.env.JWT_SECRET_KEY,
+    async (err, decodedToken) => {
+      const user = await User.findOne({ email: decodedToken.email });
+      if (decodedToken?.userType == "ADMIN") {
+        userType = "ADMIN";
+        userName = decodedToken.userName;
+      } else if (decodedToken?.userType == "USER") {
+        userType = "USER";
+        userName = user.userName;
+      } else {
+        console.log("2");
+        userType = "GUEST";
+        userName = "Guest User";
+      }
     }
-  });
+  );
 
   const newComment = new Comment({
     comment: req.body.comment,
